@@ -1,0 +1,96 @@
+global:
+  name: train-MSRVTT
+  phase: train
+  stage: train-super
+  workdir: workdir
+  seed: 11234445 #'random'
+
+dataset:
+  corpus: MSR-VTT
+  num_workers: 4
+  max_length: 15
+
+  train_caption_fpath: "/data/ntz/ntz_code2/Data/MSRVTT/metadata/train.json"
+  val_caption_fpath: "/data/ntz/ntz_code2/Data/MSRVTT/metadata/val.json"
+  test_caption_fpath: "/data/ntz/ntz_code2/Data/MSRVTT/metadata/test.json"
+
+  init_word2idx: { '<PAD>': 0, '<SOS>': 1, '<EOS>': 2, '<UNK>': 3 }
+  best_scores_base: {'CIDEr': 50.0, 'Bleu_4': 41.0, 'METEOR': 28.0, 'ROUGE_L': 60.0}
+  min_count: 1
+  frame_sampling_method: uniform
+  frame_sample_len: 32
+ #"MSVD_InceptionV4_s3": 1536,"CNN_I3D": 1024,","clip_feats":512,
+  #"RN101_feats":512,"RN50x16_feats":768"MSR-VTT_InceptionV4_s3": 1536,"MSR-VTT_I3D": 1024， "clip_feats":512,
+  backbones: {
+              "ResNet101": 2048, '3DResNext101': 2048,'category': 0
+  }
+  phase_video_feat_fpath_tpl: "/data2/ntz/ntz_code2/Data/MSRVTT/phase_feats/{}_{}.hdf5"
+  phase_sen_clip_fpath_tpl: "/data2/ntz/ntz_code2/Data/MSRVTT/phase_feats/sen_feats_{}.hdf5"
+  n_vocabs: 9507
+  train: {
+    batch_size: 100
+  }
+
+
+model:
+  name: 'modules.model_abigru.ABI_GRUNet'
+  vision: {
+    loss_weight: 10.0,
+    ce1_weight: 1.0,
+    ce2_weight: 1.0,
+    attention: 'position',
+    senf_size: 512,
+    num_channels: 64,
+
+  }
+  vocab_pretrain: './glove/msrvtt_mincount15.npy'
+
+
+
+
+optimizer:
+  type: Adam
+  wd: 0.00001
+  K: 50
+  clip_grad: 5.0
+  lr: 0.00006
+  scheduler: {
+    patience: 3,
+    gamma: 0.8,
+  }
+  lr_decay_start_from: 8
+
+
+training:
+  epochs: 500
+  beam_size: 5
+  teacher_forcing_ratio: 1.0
+  detach: True
+
+
+
+save_checkpoint:
+  save_from: 1
+  save_every: 1
+  ckpt_fpath_tpl:  "checkpoints/{}/{}.ckpt"
+
+decoder:
+  rnn_type: GRU
+  category_nums: 20
+  category_emb: 300
+  num_layers: 1
+  num_directions: 1
+  embedding_size: 300
+  hidden_size: 1024
+  attn_size: 512
+  dropout: 0.3
+
+rl:
+  is_rl: 1
+  base_model_path: 'best_point/best.ckpt'
+  reward_trans: '(r-0.05)*2'
+
+
+
+
+
